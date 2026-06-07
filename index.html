@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dziennik Kalorii - Cezary</title>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #f7f7f7; color: #1a1a1a; margin: 0; padding: 15px; }
+        
+        .app-container { max-width: 500px; margin: 0 auto; background: #ffffff; border: 3px solid #000000; padding: 20px; }
+        h1 { text-align: center; font-size: 20px; text-transform: uppercase; letter-spacing: 1px; margin-top: 0; border-bottom: 2px solid #000000; padding-bottom: 10px; }
+        
+        /* Wybór dnia i data */
+        .day-selector { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; border: 2px solid #000000; padding: 5px 10px; }
+        .day-btn { background: none; border: none; font-size: 20px; font-weight: bold; cursor: pointer; padding: 5px 15px; }
+        #current-day-label { font-weight: bold; font-size: 16px; text-transform: uppercase; }
+        .date-sub { text-align: center; font-size: 13px; font-style: italic; color: #555555; margin-bottom: 20px; font-weight: bold; }
+
+        /* Dashboard liczników */
+        .dashboard { display: flex; justify-content: space-between; margin-bottom: 25px; background: #f2f2f2; border: 2px solid #000000; padding: 15px; text-align: center; }
+        .dash-box { flex: 1; }
+        .dash-box:first-child { border-right: 1px solid #000000; }
+        .dash-label { font-size: 11px; text-transform: uppercase; font-weight: bold; color: #555; }
+        .dash-value { font-size: 28px; font-weight: 900; margin-top: 5px; }
+        
+        /* Formularz wprowadzania */
+        .meal-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed #ccc; }
+        .meal-row:last-child { border-bottom: none; }
+        .meal-info { flex: 1; }
+        .meal-name { font-weight: bold; font-size: 16px; }
+        .meal-target { font-size: 12px; color: #666; font-style: italic; }
+        
+        .input-group { display: flex; align-items: center; gap: 8px; }
+        input[type="number"] { width: 80px; height: 45px; text-align: center; font-size: 18px; font-weight: bold; border: 2px solid #000000; border-radius: 0; -webkit-appearance: none; }
+        
+        /* Przycisk zapisu */
+        .btn-save { width: 100%; height: 50px; background: #000000; color: #ffffff; border: none; font-size: 16px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; margin-top: 15px; }
+        .btn-save:active { background: #333333; }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <h1>Dziennik Kalorii</h1>
+    
+    <div class="day-selector">
+        <button class="day-btn" onclick="changeDay(-1)">&lt;</button>
+        <span id="current-day-label">Dzień 1</span>
+        <button class="day-btn" onclick="changeDay(1)">&gt;</button>
+    </div>
+    <div id="current-date-label" class="date-sub">7 Czerwca 2026</div>
+
+    <div class="dashboard">
+        <div class="dash-box">
+            <div class="dash-label">Zjedzone</div>
+            <div id="total-eaten" class="dash-value">0</div>
+            <div class="dash-sub">kcal</div>
+        </div>
+        <div class="dash-box">
+            <div class="dash-label">Zostało</div>
+            <div id="total-remaining" class="dash-value">2100</div>
+            <div class="dash-sub">kcal / 2100</div>
+        </div>
+    </div>
+
+    <div class="meal-inputs">
+        <div class="meal-row">
+            <div class="meal-info">
+                <div class="meal-name">Śniadanie</div>
+                <div class="meal-target">Cel: ~500 kcal</div>
+            </div>
+            <div class="input-group">
+                <input type="number" id="input-sniadanie" placeholder="0" min="0" oninput="calculate()">
+            </div>
+        </div>
+        
+        <div class="meal-row">
+            <div class="meal-info">
+                <div class="meal-name">Przekąska</div>
+                <div class="meal-target">Cel: ~150 kcal</div>
+            </div>
+            <div class="input-group">
+                <input type="number" id="input-przekaska" placeholder="0" min="0" oninput="calculate()">
+            </div>
+        </div>
+        
+        <div class="meal-row">
+            <div class="meal-info">
+                <div class="meal-name">Obiad</div>
+                <div class="meal-target">Cel: ~750 kcal</div>
+            </div>
+            <div class="input-group">
+                <input type="number" id="input-obiad" placeholder="0" min="0" oninput="calculate()">
+            </div>
+        </div>
+        
+        <div class="meal-row">
+            <div class="meal-info">
+                <div class="meal-name">Kolacja</div>
+                <div class="meal-target">Cel: ~700 kcal</div>
+            </div>
+            <div class="input-group">
+                <input type="number" id="input-kolacja" placeholder="0" min="0" oninput="calculate()">
+            </div>
+        </div>
+    </div>
+
+    <button class="btn-save" onclick="saveData()">Zapisz Dane Dnia</button>
+</div>
+
+<script>
+    const LIMIT = 2100;
+    let currentDay = 1;
+    let diaryData = JSON.parse(localStorage.getItem('diaryData_Cezary')) || {};
+
+    // Słownik miesięcy po polsku
+    const miesiace = ["Stycznia", "Lutego", "Marca", "Kwietnia", "Maja", "Czerwca", "Lipca", "Sierpnia", "Września", "Października", "Listopada", "Grudnia"];
+
+    function getFormattedDate(dayNumber) {
+        // Ustawiamy bazową datę startową: 7 czerwca 2026
+        let startDate = new Date(2026, 5, 7); // 5 oznacza czerwiec w JS (liczone od 0)
+        // Dodajemy odpowiednią liczbę dni (dla Dnia 1 dodajemy 0 dni)
+        startDate.setDate(startDate.getDate() + (dayNumber - 1));
+        
+        let dzien = startDate.getDate();
+        let miesiac = miesiace[startDate.getMonth()];
+        let rok = startDate.getFullYear();
+        
+        return `${dzien} ${miesiac} ${rok}`;
+    }
+
+    function loadDay(day) {
+        currentDay = day;
+        if (currentDay < 1) currentDay = 1;
+        if (currentDay > 31) currentDay = 31;
+        
+        document.getElementById('current-day-label').innerText = `Dzień ${currentDay}`;
+        document.getElementById('current-date-label').innerText = getFormattedDate(currentDay);
+        
+        const dayKey = `day_${currentDay}`;
+        const dayValues = diaryData[dayKey] || { sniadanie: '', przekaska: '', obiad: '', kolacja: '' };
+        
+        document.getElementById('input-sniadanie').value = dayValues.sniadanie;
+        document.getElementById('input-przekaska').value = dayValues.przekaska;
+        document.getElementById('input-obiad').value = dayValues.obiad;
+        document.getElementById('input-kolacja').value = dayValues.kolacja;
+        
+        calculate();
+    }
+
+    function calculate() {
+        const s = parseInt(document.getElementById('input-sniadanie').value) || 0;
+        const p = parseInt(document.getElementById('input-przekaska').value) || 0;
+        const o = parseInt(document.getElementById('input-obiad').value) || 0;
+        const k = parseInt(document.getElementById('input-kolacja').value) || 0;
+        
+        const totalEaten = s + p + o + k;
+        const totalRemaining = LIMIT - totalEaten;
+        
+        document.getElementById('total-eaten').innerText = totalEaten;
+        document.getElementById('total-remaining').innerText = totalRemaining;
+    }
+
+    function saveData() {
+        saveDataSilently();
+        alert(`Dane dla Dnia ${currentDay} (${getFormattedDate(currentDay)}) zostały zapisane!`);
+    }
+
+    function changeDay(direction) {
+        saveDataSilently(); // Automatyczny zapis przy zmianie dnia strzałką
+        loadDay(currentDay + direction);
+    }
+    
+    function saveDataSilently() {
+        const dayKey = `day_${currentDay}`;
+        diaryData[dayKey] = {
+            sniadanie: document.getElementById('input-sniadanie').value,
+            przekaska: document.getElementById('input-przekaska').value,
+            obiad: document.getElementById('input-obiad').value,
+            kolacja: document.getElementById('input-kolacja').value
+        };
+        localStorage.setItem('diaryData_Cezary', JSON.stringify(diaryData));
+    }
+
+    // Start na Dniu 1
+    loadDay(1);
+</script>
+
+</body>
+</html>
