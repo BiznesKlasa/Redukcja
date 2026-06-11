@@ -46,10 +46,10 @@
     
     <div class="day-selector">
         <button class="day-btn" onclick="changeDay(-1)">&lt;</button>
-        <span id="current-day-label">Dzień 1</span>
+        <span id="current-day-label">Dzień 5</span>
         <button class="day-btn" onclick="changeDay(1)">&gt;</button>
     </div>
-    <div id="current-date-label" class="date-sub">7 Czerwca 2026</div>
+    <div id="current-date-label" class="date-sub">11 Czerwca 2026</div>
 
     <div class="dashboard">
         <div class="dash-box">
@@ -59,8 +59,8 @@
         </div>
         <div class="dash-box">
             <div class="dash-label">Zostało</div>
-            <div id="total-remaining" class="dash-value">2100</div>
-            <div class="dash-sub">kcal / 2100</div>
+            <div id="total-remaining" class="dash-value">2700</div>
+            <div class="dash-sub" id="limit-label">kcal / 2700</div>
         </div>
     </div>
 
@@ -68,7 +68,7 @@
         <div class="meal-row">
             <div class="meal-info">
                 <div class="meal-name">Śniadanie</div>
-                <div class="meal-target">Cel: ~500 kcal</div>
+                <div class="meal-target">Cel: ~650 kcal</div>
             </div>
             <div class="input-group">
                 <input type="number" id="input-sniadanie" placeholder="0" min="0" oninput="calculate()">
@@ -78,7 +78,7 @@
         <div class="meal-row">
             <div class="meal-info">
                 <div class="meal-name">Przekąska</div>
-                <div class="meal-target">Cel: ~150 kcal</div>
+                <div class="meal-target">Cel: ~300 kcal</div>
             </div>
             <div class="input-group">
                 <input type="number" id="input-przekaska" placeholder="0" min="0" oninput="calculate()">
@@ -88,7 +88,7 @@
         <div class="meal-row">
             <div class="meal-info">
                 <div class="meal-name">Obiad</div>
-                <div class="meal-target">Cel: ~750 kcal</div>
+                <div class="meal-target">Cel: ~900 kcal</div>
             </div>
             <div class="input-group">
                 <input type="number" id="input-obiad" placeholder="0" min="0" oninput="calculate()">
@@ -98,7 +98,7 @@
         <div class="meal-row">
             <div class="meal-info">
                 <div class="meal-name">Kolacja</div>
-                <div class="meal-target">Cel: ~700 kcal</div>
+                <div class="meal-target">Cel: ~850 kcal</div>
             </div>
             <div class="input-group">
                 <input type="number" id="input-kolacja" placeholder="0" min="0" oninput="calculate()">
@@ -110,17 +110,16 @@
 </div>
 
 <script>
-    const LIMIT = 2100;
-    let currentDay = 1;
+    const LIMIT = 2700;
+    
+    // Sprawdza, czy w pamięci jest zapisany ostatnio przeglądany dzień. Jeśli nie, ustawia Dzień 5 (11 czerwca).
+    let currentDay = parseInt(localStorage.getItem('lastViewedDay_Cezary')) || 5;
     let diaryData = JSON.parse(localStorage.getItem('diaryData_Cezary')) || {};
 
-    // Słownik miesięcy po polsku
     const miesiace = ["Stycznia", "Lutego", "Marca", "Kwietnia", "Maja", "Czerwca", "Lipca", "Sierpnia", "Września", "Października", "Listopada", "Grudnia"];
 
     function getFormattedDate(dayNumber) {
-        // Ustawiamy bazową datę startową: 7 czerwca 2026
-        let startDate = new Date(2026, 5, 7); // 5 oznacza czerwiec w JS (liczone od 0)
-        // Dodajemy odpowiednią liczbę dni (dla Dnia 1 dodajemy 0 dni)
+        let startDate = new Date(2026, 5, 7); // Start: 7 czerwca 2026
         startDate.setDate(startDate.getDate() + (dayNumber - 1));
         
         let dzien = startDate.getDate();
@@ -135,8 +134,12 @@
         if (currentDay < 1) currentDay = 1;
         if (currentDay > 31) currentDay = 31;
         
+        // Zapisuje aktualnie oglądany dzień, aby po odświeżeniu do niego wrócić
+        localStorage.setItem('lastViewedDay_Cezary', currentDay);
+        
         document.getElementById('current-day-label').innerText = `Dzień ${currentDay}`;
         document.getElementById('current-date-label').innerText = getFormattedDate(currentDay);
+        document.getElementById('limit-label').innerText = `kcal / ${LIMIT}`;
         
         const dayKey = `day_${currentDay}`;
         const dayValues = diaryData[dayKey] || { sniadanie: '', przekaska: '', obiad: '', kolacja: '' };
@@ -168,7 +171,7 @@
     }
 
     function changeDay(direction) {
-        saveDataSilently(); // Automatyczny zapis przy zmianie dnia strzałką
+        saveDataSilently(); 
         loadDay(currentDay + direction);
     }
     
@@ -183,8 +186,8 @@
         localStorage.setItem('diaryData_Cezary', JSON.stringify(diaryData));
     }
 
-    // Start na Dniu 1
-    loadDay(1);
+    // Uruchomienie na zapamiętanym lub domyślnym dniu
+    loadDay(currentDay);
 </script>
 
 </body>
